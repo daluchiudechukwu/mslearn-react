@@ -1,0 +1,43 @@
+trigger:
+- UAT
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- checkout: self
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    cd code/0-starter
+    npm install
+    npm run build
+    mkdir -p $(Build.ArtifactStagingDirectory)
+    cp -r build/* $(Build.ArtifactStagingDirectory)
+  displayName: 'Install dependencies and build the project'
+  
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/build.zip'
+    replaceExistingArchive: true
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/build.zip'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+  displayName: 'Publish Build Artifacts'
+
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: 'Visual Studio Enterprise Subscription – MPN (6685c84f-65b7-4373-84d3-94e42f10bbb7)'
+    appType: 'webApp'
+    appName: 'jhdgsjkxd'
+    package: '$(Build.ArtifactStagingDirectory)/build.zip'
+    deploymentMethod: 'auto'
